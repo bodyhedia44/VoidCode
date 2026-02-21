@@ -1,6 +1,7 @@
 """Tool definitions and execution logic."""
 
 import json
+import subprocess
 
 # -- Tool schema sent to the LLM --------------------------------------------------
 
@@ -43,7 +44,26 @@ TOOLS = [
         },
     },
 },
+{
+    "type": "function",
+    "function": {
+        "name": "Bash",
+        "description": "Execute a shell command",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string",
+                    "description": "The command to execute",
+                }
+            },
+            "required": ["command"],
+        },
+    },
+},
 ]
+
+# -- Tool implementations ---------------------------------------------------------
 
 def execute_read(file_path: str) -> str:
     """Read a file and return its contents."""
@@ -58,11 +78,20 @@ def execute_write(file_path: str, content: str) -> str:
     return f"Successfully wrote to {file_path}"
 
 
+def execute_bash(command: str) -> str:
+    """Execute a shell command and return combined stdout/stderr."""
+    result = subprocess.run(
+        command, shell=True, capture_output=True, text=True,
+    )
+    return result.stdout + result.stderr
+
+
 # -- Dispatcher --------------------------------------------------------------------
 
 TOOL_REGISTRY: dict[str, callable] = {
     "Read": lambda args: execute_read(args["file_path"]),
     "Write": lambda args: execute_write(args["file_path"], args["content"]),
+    "Bash": lambda args: execute_bash(args["command"]),
 }
 
 
