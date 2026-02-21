@@ -1,51 +1,42 @@
 import argparse
-import os
 import sys
 
-from openai import OpenAI
-
-API_KEY = os.getenv("OPENROUTER_API_KEY")
-BASE_URL = os.getenv("OPENROUTER_BASE_URL", default="https://openrouter.ai/api/v1")
+from app.client import create_client, MODEL
+from app.tools import TOOLS, execute_tool_call
 
 
-def main():
-    p = argparse.ArgumentParser()
-    p.add_argument("-p", required=True)
-    args = p.parse_args()
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="AI coding assistant")
+    parser.add_argument("-p", dest="prompt", required=True, help="User prompt")
+    return parser.parse_args()
 
-    if not API_KEY:
-        raise RuntimeError("OPENROUTER_API_KEY is not set")
 
-    client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+def run(prompt: str) -> None:
+    client = create_client()
 
-    chat = client.chat.completions.create(
-        model="anthropic/claude-haiku-4.5",
-        messages=[{"role": "user", "content": args.p}],
-        tools=[
-            {
-            "type": "function",
-            "function": {
-                "name": "Read",
-                "description": "Read and return the contents of a file",
-                "parameters": {
-                "type": "object",
-                "properties": {
-                    "file_path": {
-                    "type": "string",
-                    "description": "The path to the file to read"
-                    }
-                },
-                "required": ["file_path"]
-                }
-            }
-        }
-        ]
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        tools=TOOLS,
     )
 
-    if not chat.choices or len(chat.choices) == 0:
-        raise RuntimeError("no choices in response")
+    if not response.choices:
+        raise RuntimeError("No choices in API response")
 
-    print(chat.choices[0].message.content)
+    message = response.choices[0].message
+
+    # If the model requested tool calls, execute the first one and print the result.
+    if message.tool_calls:
+        result = execute_tool_call(message.tool_calls[0])
+        print(result, end="")
+    else:
+        # No tool call — just print the text reply.
+        print(message.content)
+
+
+def main() -> None:
+    args = parse_args()
+    run(args.prompt)
 
 
 if __name__ == "__main__":
