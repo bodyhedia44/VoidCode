@@ -172,3 +172,14 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# CodeCrafters
+.codecrafters/
+codecrafters.yml
+your_program.sh
+pyproject.toml
+# IDE
+.vscode/
+
+# OS
+.DS_Store

@@ -1,34 +1,79 @@
-[![progress-banner](https://backend.codecrafters.io/progress/claude-code/f19d339c-8902-49cb-aa3a-943f797cdd6c)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+# VoidCode
 
-This is a starting point for Python solutions to the
-["Build Your own Claude Code" Challenge](https://codecrafters.io/challenges/claude-code).
+A lightweight AI coding agent that runs in your terminal.It can read/write files and execute shell commands autonomously through an agent loop.
 
-Claude Code is an AI coding assistant that uses Large Language Models (LLMs) to
-understand code and perform actions through tool calls. In this challenge,
-you'll build your own Claude Code from scratch by implementing an LLM-powered
-coding assistant.
+## Features
 
-Along the way you'll learn about HTTP RESTful APIs, OpenAI-compatible tool
-calling, agent loop, and how to integrate multiple tools into an AI assistant.
+- **Agent Loop** — iteratively converses with the LLM until the task is complete
+- **Read Tool** — reads file contents and feeds them to the model
+- **Write Tool** — creates or overwrites files as instructed by the model
+- **Bash Tool** — executes arbitrary shell commands and captures output
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+## Project Structure
 
-# Passing the first stage
-
-The entry point for your `claude-code` implementation is in `app/main.py`. Study
-and uncomment the relevant code, and submit to pass the first stage:
-
-```sh
-codecrafters submit
+```
+app/
+├── __init__.py   # Package marker
+├── client.py     # OpenRouter API client setup
+├── main.py       # Entry-point & agent loop
+└── tools.py      # Tool schemas, implementations & dispatcher
 ```
 
-# Stage 2 & beyond
+## Setup
 
-Note: This section is for stages 2 and beyond.
+### Prerequisites
 
-1. Ensure you have `uv` installed locally.
-2. Run `./your_program.sh` to run your program, which is implemented in
-   `app/main.py`.
-3. Run `codecrafters submit` to submit your solution to CodeCrafters. Test
-   output will be streamed to your terminal.
+- Python 3.14+
+- [uv](https://github.com/astral-sh/uv) package manager
+- An [OpenRouter](https://openrouter.ai/) API key
+
+### Installation
+
+```bash
+git clone https://github.com/<your-username>/VoidCode.git
+cd VoidCode
+uv sync
+```
+
+### Configuration
+
+Create a `.env` file in the project root:
+
+```
+OPENROUTER_API_KEY=sk-or-v1-...
+```
+
+Or export the variable directly:
+
+```bash
+export OPENROUTER_API_KEY="sk-or-v1-..."
+```
+
+## Usage
+
+```bash
+uv run -m app.main -p "your prompt here"
+```
+
+### Examples
+
+```bash
+# Read a file
+uv run -m app.main -p "What is the content of README.md?"
+
+# Create a file
+uv run -m app.main -p "Create a hello.py that prints Hello World"
+
+# Run a command
+uv run -m app.main -p "List all Python files in the current directory"
+
+# Multi-step task
+uv run -m app.main -p "Read main.py, find any bugs, and fix them"
+```
+
+## How It Works
+
+1. Your prompt is sent to the LLM along with available tool definitions
+2. If the LLM requests tool calls, the agent executes them and returns results
+3. The conversation continues until the LLM produces a final text response
+4. The final answer is printed to stdout
