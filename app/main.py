@@ -1,5 +1,6 @@
+"""Entry-point for the AI coding assistant."""
+
 import argparse
-import sys
 
 from app.client import create_client, MODEL
 from app.tools import TOOLS, execute_tool_call
@@ -13,25 +14,36 @@ def parse_args() -> argparse.Namespace:
 
 def run(prompt: str) -> None:
     client = create_client()
+    messages: list[dict] = [{"role": "user", "content": prompt}]
 
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        tools=TOOLS,
-    )
+    while True:
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=messages,
+            tools=TOOLS,
+        )
 
-    if not response.choices:
-        raise RuntimeError("No choices in API response")
+        if not response.choices:
+            raise RuntimeError("No choices in API response")
 
-    message = response.choices[0].message
+        message = response.choices[0].message
 
-    # If the model requested tool calls, execute the first one and print the result.
-    if message.tool_calls:
-        result = execute_tool_call(message.tool_calls[0])
-        print(result, end="")
-    else:
-        # No tool call — just print the text reply.
-        print(message.content)
+        # Append the assistant's response to conversation history.
+        messages.append(message.model_dump())
+
+        # If no tool calls, we have the final answer.
+        if not message.tool_calls:
+            print(message.content)
+            break
+
+        # Execute each requested tool and feed results back.
+        for tool_call in message.tool_calls:
+            result = execute_tool_call(tool_call)
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "content": result,
+            })
 
 
 def main() -> None:
